@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='scrapy-redis-sentinel',
     description="Redis Cluster for Scrapy.",
-    version="0.1.1",
+    version="0.1.2",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
     url='https://github.com/Sitoi/scrapy-redis-cluster.git',

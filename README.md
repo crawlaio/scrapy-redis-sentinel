@@ -1,5 +1,10 @@
 # scrapy-redis 集群版
 
+![PyPI](https://img.shields.io/pypi/v/scrapy-redis-sentinel)
+![PyPI - License](https://img.shields.io/pypi/l/scrapy-redis-sentinel)
+![GitHub last commit](https://img.shields.io/github/last-commit/Sitoi/scrapy-redis-sentinel)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
+
 本项目基于原项目 [scrpy-redis](https://github.com/rmax/scrapy-redis)
 进行修改，修改内容如下：
 
