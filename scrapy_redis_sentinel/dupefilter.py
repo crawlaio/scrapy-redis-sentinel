@@ -5,7 +5,7 @@ from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
 from . import defaults
-from .connection import get_redis_from_settings
+from .connection import from_settings
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class RFPDupeFilter(BaseDupeFilter):
 
 
         """
-        server = get_redis_from_settings(settings)
+        server = from_settings(settings)
         # XXX: This creates one-time key. needed to support to use this
         # class as standalone dupefilter with scrapy's default scheduler
         # if scrapy passes spider on open() method this wouldn't be needed
@@ -116,7 +116,7 @@ class RFPDupeFilter(BaseDupeFilter):
     @classmethod
     def from_spider(cls, spider):
         settings = spider.settings
-        server = get_redis_from_settings(settings)
+        server = from_settings(settings)
         dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY", defaults.SCHEDULER_DUPEFILTER_KEY)
         key = dupefilter_key % {'spider': spider.name}
         debug = settings.getbool('DUPEFILTER_DEBUG')
