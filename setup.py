@@ -1,11 +1,12 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 from setuptools import setup, find_packages
 
 setup(
     name='scrapy-redis-sentinel',
     description="Redis Cluster for Scrapy.",
-    version="0.1.2",
+    long_description=open('README.rst', encoding="utf-8").read(),
+    version="0.1.3",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
     url='https://github.com/Sitoi/scrapy-redis-cluster.git',
@@ -18,6 +19,7 @@ setup(
     ],
     license="MIT",
     keywords=[
+        'scrapy-redis',
         'scrapy-redis-sentinel',
         'scrapy-redis-cluster'
     ],
