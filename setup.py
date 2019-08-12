@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='scrapy-redis-cluster',
+    name='scrapy-redis-sentinel',
     version=0.1,
     description="Redis Cluster for Scrapy.",
     author="Shi Tao",
@@ -17,7 +17,10 @@ setup(
         'redis-py-cluster>=1.3.4',
     ],
     license="MIT",
-    keywords='scrapy-redis-cluster',
+    keywords=[
+        'scrapy-redis-sentinel',
+        'scrapy-redis-cluster'
+    ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',

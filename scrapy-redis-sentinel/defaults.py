@@ -1,6 +1,9 @@
 import redis
 
 # For standalone use.
+import rediscluster
+from redis.sentinel import Sentinel
+
 DUPEFILTER_KEY = 'dupefilter:%(timestamp)s'
 
 PIPELINE_KEY = '%(spider)s:items'
@@ -22,3 +25,6 @@ SCHEDULER_DUPEFILTER_CLASS = 'scrapy_redis.dupefilter.RFPDupeFilter'
 
 START_URLS_KEY = '%(name)s:start_urls'
 START_URLS_AS_SET = False
+
+REDIS_CLUSTER_CLS = rediscluster.StrictRedisCluster
+REDIS_SENTINEL_CLS = Sentinel
