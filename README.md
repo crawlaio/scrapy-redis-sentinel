@@ -18,11 +18,11 @@ pip install scrapy-redis-sentinel --user
 
 ```python
 # ----------------------------------------Redis 单机模式-------------------------------------
-# Redis 单机模式
+# Redis 单机地址
 REDIS_HOST = "172.25.2.25"
 REDIS_PORT = 6379
 
-# REDIS 配置参数
+# REDIS 单机模式配置参数
 REDIS_PARAMS = {
     "password": "xxxx",
     "db": 0
@@ -37,7 +37,7 @@ REDIS_SENTINELS = [
     ('172.25.2.27', 26379)
 ]
 
-# 注：REDIS 集群配置参数 与 REDIS_PARAMS 可同时存在，如参数同时存在，以 REDIS_SENTINEL_PARAMS 中的参数为主。
+# REDIS_SENTINEL_PARAMS 哨兵模式配置参数。
 REDIS_SENTINEL_PARAMS= {
     "service_name":"mymaster",
     "password": "xxxx",
@@ -54,7 +54,7 @@ REDIS_MASTER_NODES = [
     {"host": "172.25.2.27", "port": "6379"},
 ]
 
-# 注：REDIS 集群配置参数 与 REDIS_PARAMS 可同时存在，如参数同时存在，以 REDIS_CLUSTER_PARAMS 中的参数为主。
+# REDIS_CLUSTER_PARAMS 集群模式配置参数
 REDIS_CLUSTER_PARAMS= {
     "password": "xxxx",
     "db": 0
@@ -65,9 +65,9 @@ REDIS_CLUSTER_PARAMS= {
 # 在 redis 中保持 scrapy-redis 用到的各个队列，从而允许暂停和暂停后恢复，也就是不清理 redis queues
 SCHEDULER_PERSIST = True  
 # 调度队列  
-SCHEDULER = "scrapy-redis-sentinel.scheduler.Scheduler"  
+SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"  
 # 去重 
-DUPEFILTER_CLASS = "scrapy-redis-sentinel.dupefilter.RFPDupeFilter"  
+DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"  
 
 ```
 
