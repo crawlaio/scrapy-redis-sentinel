@@ -80,7 +80,7 @@ DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 
 ridis 包版本不正确
 
-```shell script
+```bash
   File "C:\Python37\lib\site-packages\rediscluster\nodemanager.py", line 12, in <module>
     from redis._compat import b, unicode, bytes, long, basestring
 ImportError: cannot import name 'b' from 'redis._compat' (C:\Users\Sitoi\AppData\Roaming\Python\Python37\site-packages\redis\_compat.py)
@@ -88,7 +88,7 @@ ImportError: cannot import name 'b' from 'redis._compat' (C:\Users\Sitoi\AppData
 
 解决方案：
 
-```shell script
+```bash
 pip uninstall redis -y
 pip install redis==2.10.6
 ```
