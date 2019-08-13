@@ -12,13 +12,15 @@
 2. 添加了 Redis 集群连接支持
 3. TODO 去重
 
-## 配置示例
+## 安装 
 
 ```bash
 pip install scrapy-redis-sentinel --user
 ```
 
-> 原版本的所有配置都支持, 优先级：哨兵模式 > 集群模式 > 单机模式
+## 配置示例
+
+> 原版本 scrpy-redis 的所有配置都支持, 优先级：哨兵模式 > 集群模式 > 单机模式
 
 ```python
 # ----------------------------------------Redis 单机模式-------------------------------------
@@ -75,6 +77,17 @@ DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 ```
 
 > 注：当使用集群时单机不生效
+
+## spiders 使用
+
+```python
+from scrapy_redis_sentinel.spiders import RedisSpider
+
+class Spider(RedisSpider):
+    ...
+
+```
+
 
 ## 问题
 
