@@ -43,7 +43,7 @@ class RFPDupeFilter(BaseDupeFilter):
         """Returns an instance from given settings.
 
         This uses by default the key ``dupefilter:<timestamp>``. When using the
-        ``scrapy_redis.scheduler.Scheduler`` class, this method is not used as
+        ``scrapy_redis_sentinel.scheduler.Scheduler`` class, this method is not used as
         it needs to pass the spider name in the key.
 
         Parameters

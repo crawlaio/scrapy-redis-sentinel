@@ -28,7 +28,7 @@ REDIS_PORT = 6379
 
 # REDIS 单机模式配置参数
 REDIS_PARAMS = {
-    "password": "xxxx",
+    "password": "password",
     "db": 0
 }
 
@@ -44,7 +44,7 @@ REDIS_SENTINELS = [
 # REDIS_SENTINEL_PARAMS 哨兵模式配置参数。
 REDIS_SENTINEL_PARAMS= {
     "service_name":"mymaster",
-    "password": "xxxx",
+    "password": "password",
     "db": 0
 }
 
@@ -59,7 +59,7 @@ REDIS_MASTER_NODES = [
 
 # REDIS_CLUSTER_PARAMS 集群模式配置参数
 REDIS_CLUSTER_PARAMS= {
-    "password": "xxxx",
+    "password": "password",
     "db": 0
 }
 
@@ -75,3 +75,20 @@ DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 ```
 
 > 注：当使用集群时单机不生效
+
+## 问题
+
+ridis 包版本不正确
+
+```shell script
+  File "C:\Python37\lib\site-packages\rediscluster\nodemanager.py", line 12, in <module>
+    from redis._compat import b, unicode, bytes, long, basestring
+ImportError: cannot import name 'b' from 'redis._compat' (C:\Users\Sitoi\AppData\Roaming\Python\Python37\site-packages\redis\_compat.py)
+```
+
+解决方案：
+
+```shell script
+pip uninstall redis -y
+pip install redis==2.10.6
+```
