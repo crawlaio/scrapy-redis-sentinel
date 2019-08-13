@@ -80,6 +80,20 @@ DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 
 ## spiders 使用
 
+**修改 RedisSpider 引入方式**
+
+原版本 `scrpy-redis` 使用方式
+
+```python
+from scrapy_redis.spiders import RedisSpider
+
+class Spider(RedisSpider):
+    ...
+
+```
+
+`scrapy-redis-sentinel` 使用方式
+
 ```python
 from scrapy_redis_sentinel.spiders import RedisSpider
 
