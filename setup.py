@@ -6,7 +6,7 @@ setup(
     name='scrapy-redis-sentinel',
     description="Redis Cluster for Scrapy.",
     long_description=open('README.rst', encoding="utf-8").read(),
-    version="0.1.3",
+    version="0.1.5",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
     url='https://github.com/Sitoi/scrapy-redis-cluster.git',
@@ -24,8 +24,15 @@ setup(
         'scrapy-redis-cluster'
     ],
     classifiers=[
+        'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 )
