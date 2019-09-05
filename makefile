@@ -1,3 +1,5 @@
+.PHONY: sdist upload
+
 sdist:
 	 python setup.py sdist
 
