@@ -23,6 +23,13 @@ pip install scrapy-redis-sentinel --user
 > 原版本 scrpy-redis 的所有配置都支持, 优先级：哨兵模式 > 集群模式 > 单机模式
 
 ```python
+# ----------------------------------------Bloomfilter 配置-------------------------------------
+# 使用的哈希函数数，默认为6  
+BLOOMFILTER_HASH_NUMBER = 6
+
+# Bloomfilter 使用的 Redis 内存位，30 表示 2 ^ 30 = 128MB，默认为 22 (1MB 可去重 130W URL)  
+BLOOMFILTER_BIT = 22
+
 # ----------------------------------------Redis 单机模式-------------------------------------
 # Redis 单机地址
 REDIS_HOST = "172.25.2.25"

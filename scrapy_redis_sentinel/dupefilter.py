@@ -5,6 +5,7 @@ from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
 from . import defaults
+from .bloomfilter import BloomFilter
 from .connection import from_settings
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ class RFPDupeFilter(BaseDupeFilter):
 
     logger = logger
 
-    def __init__(self, server, key, debug=False):
+    def __init__(self, server, key, bit, hash_number, debug=False):
         """Initialize the duplicates filter.
 
         Parameters
@@ -35,6 +36,10 @@ class RFPDupeFilter(BaseDupeFilter):
         """
         self.server = server
         self.key = key
+        self.bit = bit
+        self.hash_number = hash_number
+        # you can increase blockNum if your are filtering too many urls
+        self.bf = BloomFilter(server, key, bit, hash_number)
         self.debug = debug
         self.logdupes = True
 
@@ -58,13 +63,18 @@ class RFPDupeFilter(BaseDupeFilter):
 
         """
         server = from_settings(settings)
+        print("-" * 100)
+        print(settings)
+        print("-" * 100)
         # XXX: This creates one-time key. needed to support to use this
         # class as standalone dupefilter with scrapy's default scheduler
         # if scrapy passes spider on open() method this wouldn't be needed
         # TODO: Use SCRAPY_JOB env as default and fallback to timestamp.
-        key = defaults.DUPEFILTER_KEY % {'timestamp': int(time.time())}
-        debug = settings.getbool('DUPEFILTER_DEBUG')
-        return cls(server, key=key, debug=debug)
+        key = defaults.DUPEFILTER_KEY % {"timestamp": int(time.time())}
+        debug = settings.getbool("DUPEFILTER_DEBUG")
+        bit = settings.getint("BLOOMFILTER_BIT", 30)
+        hash_number = settings.getint("BLOOMFILTER_HASH_NUMBER", 6)
+        return cls(server=server, key=key, bit=bit, hash_number=hash_number, debug=debug)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -94,10 +104,11 @@ class RFPDupeFilter(BaseDupeFilter):
         bool
 
         """
-        fp = self.request_fingerprint(request)
-        # This returns the number of values added, zero if already exists.
-        added = self.server.sadd(self.key, fp)
-        return added == 0
+        fp = request_fingerprint(request)
+        if self.bf.exists(fp):
+            return True
+        self.bf.insert(fp)
+        return False
 
     def request_fingerprint(self, request):
         """Returns a fingerprint for a given request.
@@ -120,9 +131,11 @@ class RFPDupeFilter(BaseDupeFilter):
         dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY", defaults.SCHEDULER_DUPEFILTER_KEY)
         key = dupefilter_key % {'spider': spider.name}
         debug = settings.getbool('DUPEFILTER_DEBUG')
-        return cls(server, key=key, debug=debug)
+        bit = settings.getint("BLOOMFILTER_BIT", 30)
+        hash_number = settings.getint("BLOOMFILTER_HASH_NUMBER", 6)
+        return cls(server=server, key=key, bit=bit, hash_number=hash_number, debug=debug)
 
-    def close(self, reason=''):
+    def close(self, reason=""):
         """Delete data on close. Called by Scrapy's scheduler.
 
         Parameters
@@ -147,10 +160,12 @@ class RFPDupeFilter(BaseDupeFilter):
         """
         if self.debug:
             msg = "Filtered duplicate request: %(request)s"
-            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
+            self.logger.debug(msg, {"request": request}, extra={"spider": spider})
         elif self.logdupes:
-            msg = ("Filtered duplicate request %(request)s"
-                   " - no more duplicates will be shown"
-                   " (see DUPEFILTER_DEBUG to show all duplicates)")
-            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
+            msg = (
+                "Filtered duplicate request %(request)s"
+                " - no more duplicates will be shown"
+                " (see DUPEFILTER_DEBUG to show all duplicates)"
+            )
+            self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False

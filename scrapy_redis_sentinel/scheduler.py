@@ -31,21 +31,30 @@ class Scheduler(object):
 
     """
 
-    def __init__(self, server,
-                 persist=False,
-                 flush_on_start=False,
-                 queue_key=defaults.SCHEDULER_QUEUE_KEY,
-                 queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
-                 dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
-                 dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
-                 idle_before_close=0,
-                 serializer=None):
+    def __init__(
+            self,
+            server,
+            bit,
+            hash_number,
+            persist=False,
+            flush_on_start=False,
+            queue_key=defaults.SCHEDULER_QUEUE_KEY,
+            queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
+            dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
+            dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
+            idle_before_close=0,
+            serializer=None
+    ):
         """Initialize scheduler.
 
         Parameters
         ----------
         server : Redis
             The redis server instance.
+        bit: int
+            The bloom filer bit number
+        hash_number: int
+            The Hash function number
         persist : bool
             Whether to flush requests when closing. Default is False.
         flush_on_start : bool
@@ -75,6 +84,11 @@ class Scheduler(object):
         self.idle_before_close = idle_before_close
         self.serializer = serializer
         self.stats = None
+        self.bit = bit
+        self.hash_number = hash_number
+        self.queue = None
+        self.df = None
+        self.spider = None
 
     def __len__(self):
         return len(self.queue)
@@ -82,21 +96,23 @@ class Scheduler(object):
     @classmethod
     def from_settings(cls, settings):
         kwargs = {
-            'persist': settings.getbool('SCHEDULER_PERSIST'),
-            'flush_on_start': settings.getbool('SCHEDULER_FLUSH_ON_START'),
-            'idle_before_close': settings.getint('SCHEDULER_IDLE_BEFORE_CLOSE'),
+            "persist": settings.getbool("SCHEDULER_PERSIST"),
+            "flush_on_start": settings.getbool("SCHEDULER_FLUSH_ON_START"),
+            "idle_before_close": settings.getint("SCHEDULER_IDLE_BEFORE_CLOSE"),
         }
 
         # If these values are missing, it means we want to use the defaults.
         optional = {
             # TODO: Use custom prefixes for this settings to note that are
             # specific to scrapy-redis.
-            'queue_key': 'SCHEDULER_QUEUE_KEY',
-            'queue_cls': 'SCHEDULER_QUEUE_CLASS',
-            'dupefilter_key': 'SCHEDULER_DUPEFILTER_KEY',
+            "queue_key": "SCHEDULER_QUEUE_KEY",
+            "queue_cls": "SCHEDULER_QUEUE_CLASS",
+            "dupefilter_key": "SCHEDULER_DUPEFILTER_KEY",
             # We use the default setting name to keep compatibility.
-            'dupefilter_cls': 'DUPEFILTER_CLASS',
-            'serializer': 'SCHEDULER_SERIALIZER',
+            "dupefilter_cls": "DUPEFILTER_CLASS",
+            "serializer": "SCHEDULER_SERIALIZER",
+            "bit": "BLOOMFILTER_BIT",
+            "hash_number": "BLOOMFILTER_HASH_NUMBER",
         }
         for name, setting_name in optional.items():
             val = settings.get(setting_name)
@@ -104,12 +120,12 @@ class Scheduler(object):
                 kwargs[name] = val
 
         # Support serializer as a path to a module.
-        if isinstance(kwargs.get('serializer'), six.string_types):
-            kwargs['serializer'] = importlib.import_module(kwargs['serializer'])
+        if isinstance(kwargs.get("serializer"), six.string_types):
+            kwargs["serializer"] = importlib.import_module(kwargs["serializer"])
 
         server = connection.from_settings(settings)
-        # Ensure the connection is working.
-        server.ping()
+        if not settings.get("REDIS_MASTER_NODES", False):
+            server.ping()
 
         return cls(server=server, **kwargs)
 
@@ -127,14 +143,22 @@ class Scheduler(object):
             self.queue = load_object(self.queue_cls)(
                 server=self.server,
                 spider=spider,
-                key=self.queue_key % {'spider': spider.name},
+                key=self.queue_key % {"spider": spider.name},
                 serializer=self.serializer,
             )
         except TypeError as e:
-            raise ValueError("Failed to instantiate queue class '%s': %s",
-                             self.queue_cls, e)
+            raise ValueError("Failed to instantiate queue class '%s': %s", self.queue_cls, e)
 
-        self.df = load_object(self.dupefilter_cls).from_spider(spider)
+        try:
+            self.df = load_object(self.dupefilter_cls)(
+                server=self.server,
+                key=self.dupefilter_key % {"spider": spider.name},
+                bit=self.bit,
+                hash_number=self.hash_number,
+                debug=spider.settings.getbool("DUPEFILTER_DEBUG"),
+            )
+        except TypeError as e:
+            raise ValueError("Failed to instantiate dupefilter class '%s': %s", self.dupefilter_cls, e)
 
         if self.flush_on_start:
             self.flush()
@@ -155,7 +179,7 @@ class Scheduler(object):
             self.df.log(request, self.spider)
             return False
         if self.stats:
-            self.stats.inc_value('scheduler/enqueued/redis', spider=self.spider)
+            self.stats.inc_value("scheduler/enqueued/redis", spider=self.spider)
         self.queue.push(request)
         return True
 
@@ -163,7 +187,7 @@ class Scheduler(object):
         block_pop_timeout = self.idle_before_close
         request = self.queue.pop(block_pop_timeout)
         if request and self.stats:
-            self.stats.inc_value('scheduler/dequeued/redis', spider=self.spider)
+            self.stats.inc_value("scheduler/dequeued/redis", spider=self.spider)
         return request
 
     def has_pending_requests(self):

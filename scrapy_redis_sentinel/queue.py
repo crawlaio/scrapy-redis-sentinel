@@ -1,3 +1,4 @@
+from rediscluster import RedisCluster
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 from . import picklecompat
@@ -25,16 +26,14 @@ class Base(object):
             # Backward compatibility.
             # TODO: deprecate pickle.
             serializer = picklecompat
-        if not hasattr(serializer, 'loads'):
-            raise TypeError("serializer does not implement 'loads' function: %r"
-                            % serializer)
-        if not hasattr(serializer, 'dumps'):
-            raise TypeError("serializer '%s' does not implement 'dumps' function: %r"
-                            % serializer)
+        if not hasattr(serializer, "loads"):
+            raise TypeError("serializer does not implement 'loads' function: %r" % serializer)
+        if not hasattr(serializer, "dumps"):
+            raise TypeError("serializer '%s' does not implement 'dumps' function: %r" % serializer)
 
         self.server = server
         self.spider = spider
-        self.key = key % {'spider': spider.name}
+        self.key = key % {"spider": spider.name}
         self.serializer = serializer
 
     def _encode_request(self, request):
@@ -101,18 +100,33 @@ class PriorityQueue(Base):
         # We don't use zadd method as the order of arguments change depending on
         # whether the class is Redis or StrictRedis, and the option of using
         # kwargs only accepts strings, not bytes.
-        self.server.execute_command('ZADD', self.key, score, data)
+        self.server.execute_command("ZADD", self.key, score, data)
 
     def pop(self, timeout=0):
         """
         Pop a request
         timeout not support in this queue class
         """
-        # use atomic range/remove using multi/exec
-        pipe = self.server.pipeline()
-        pipe.multi()
-        pipe.zrange(self.key, 0, 0).zremrangebyrank(self.key, 0, 0)
-        results, count = pipe.execute()
+        if not isinstance(self.server, RedisCluster):
+            # use atomic range/remove using multi/exec
+            pipe = self.server.pipeline()
+            pipe.multi()
+            pipe.zrange(self.key, 0, 0).zremrangebyrank(self.key, 0, 0)
+            results, count = pipe.execute()
+        else:
+            # 使用集群的时候不能使用 multi/exec 来完成一个事务操作；使用lua脚本来实现类似功能
+            pop_lua_script = """
+            local result = redis.call('zrange', KEYS[1], 0, 0)
+            local element = result[1]
+            if element then
+                redis.call('zremrangebyrank', KEYS[1], 0, 0)
+                return element
+            else
+                return nil
+            end
+            """
+            script = self.server.register_script(pop_lua_script)
+            results = [script(keys=[self.key])]
         if results:
             return self._decode_request(results[0])
 
