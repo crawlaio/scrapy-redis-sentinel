@@ -15,7 +15,7 @@ setup(
         'Scrapy==1.7.3',
         'redis==3.0.1',
         'six>=1.5.2',
-        'redis-py-cluster==2.0.0',
+        'redis-py-cluster==2.0.0'
     ],
     license="MIT",
     keywords=[

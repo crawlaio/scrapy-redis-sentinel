@@ -1,6 +1,3 @@
-from .defaults import BLOOMFILTER_BIT, BLOOMFILTER_HASH_NUMBER
-
-
 class HashMap(object):
     def __init__(self, m, seed):
         self.m = m
@@ -19,7 +16,7 @@ class HashMap(object):
 
 
 class BloomFilter(object):
-    def __init__(self, server, key, bit=BLOOMFILTER_BIT, hash_number=BLOOMFILTER_HASH_NUMBER):
+    def __init__(self, server, key, bit=30, hash_number=6):
         """
         Initialize BloomFilter
         :param server: Redis Server

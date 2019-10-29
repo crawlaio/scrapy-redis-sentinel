@@ -6,11 +6,12 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
 
 本项目基于原项目 [scrpy-redis](https://github.com/rmax/scrapy-redis)
+
 进行修改，修改内容如下：
 
 1. 添加了 Redis 哨兵连接支持
 2. 添加了 Redis 集群连接支持
-3. TODO 去重
+3. 添加了 Bloomfilter 去重
 
 ## 安装 
 
@@ -24,11 +25,14 @@ pip install scrapy-redis-sentinel --user
 
 ```python
 # ----------------------------------------Bloomfilter 配置-------------------------------------
-# 使用的哈希函数数，默认为6  
+# 使用的哈希函数数，默认为 6
 BLOOMFILTER_HASH_NUMBER = 6
 
-# Bloomfilter 使用的 Redis 内存位，30 表示 2 ^ 30 = 128MB，默认为 22 (1MB 可去重 130W URL)  
-BLOOMFILTER_BIT = 22
+# Bloomfilter 使用的 Redis 内存位，30 表示 2 ^ 30 = 128MB，默认为 30   (2 ^ 22 = 1MB 可去重 130W URL)
+BLOOMFILTER_BIT = 30
+
+# 是否开启去重调试模式 默认为 False 关闭
+DUPEFILTER_DEBUG = False
 
 # ----------------------------------------Redis 单机模式-------------------------------------
 # Redis 单机地址
@@ -68,8 +72,7 @@ REDIS_MASTER_NODES = [
 
 # REDIS_CLUSTER_PARAMS 集群模式配置参数
 REDIS_CLUSTER_PARAMS= {
-    "password": "password",
-    "db": 0
+    "password": "password"
 }
 
 # ----------------------------------------Scrapy 其他参数-------------------------------------
@@ -81,6 +84,13 @@ SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"
 # 去重 
 DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"  
 
+# 指定排序爬取地址时使用的队列
+# 默认的 按优先级排序( Scrapy 默认)，由 sorted set 实现的一种非 FIFO、LIFO 方式。
+# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderPriorityQueue'
+# 可选的 按先进先出排序（FIFO）
+# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
+# 可选的 按后进先出排序（LIFO）
+# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
 ```
 
 > 注：当使用集群时单机不生效
@@ -107,22 +117,4 @@ from scrapy_redis_sentinel.spiders import RedisSpider
 class Spider(RedisSpider):
     ...
 
-```
-
-
-## 问题
-
-ridis 包版本不正确
-
-```bash
-  File "C:\Python37\lib\site-packages\rediscluster\nodemanager.py", line 12, in <module>
-    from redis._compat import b, unicode, bytes, long, basestring
-ImportError: cannot import name 'b' from 'redis._compat' (C:\Users\Sitoi\AppData\Roaming\Python\Python37\site-packages\redis\_compat.py)
-```
-
-解决方案：
-
-```bash
-pip uninstall redis -y
-pip install redis==2.10.6
 ```
