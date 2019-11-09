@@ -6,13 +6,13 @@ setup(
     name='scrapy-redis-sentinel',
     description="Redis Cluster for Scrapy.",
     long_description=open('README.rst', encoding="utf-8").read(),
-    version="0.2.0",
+    version="0.2.1",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
     url='https://github.com/Sitoi/scrapy-redis-sentinel.git',
     packages=find_packages(),
     install_requires=[
-        'Scrapy==1.7.3',
+        'Scrapy',
         'redis==3.0.1',
         'six>=1.5.2',
         'redis-py-cluster==2.0.0'

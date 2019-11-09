@@ -1,4 +1,4 @@
 scrapy
 redis==3.0.1
-six
+six>=1.5.2
 redis-py-cluster==2.0.0

@@ -80,11 +80,11 @@ scrapy-redis 集群版
     # ----------------------------------------Scrapy 其他参数-------------------------------------
 
     # 在 redis 中保持 scrapy-redis 用到的各个队列，从而允许暂停和暂停后恢复，也就是不清理 redis queues
-    SCHEDULER_PERSIST = True  
-    # 调度队列  
-    SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"  
-    # 去重 
-    DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"  
+    SCHEDULER_PERSIST = True
+    # 调度队列
+    SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"
+    # 去重
+    DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 
     # 指定排序爬取地址时使用的队列
     # 默认的 按优先级排序( Scrapy 默认)，由 sorted set 实现的一种非 FIFO、LIFO 方式。
