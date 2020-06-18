@@ -111,7 +111,7 @@ class Scheduler(object):
             kwargs["serializer"] = importlib.import_module(kwargs["serializer"])
 
         server = connection.from_settings(settings)
-        if not settings.get("REDIS_MASTER_NODES", False):
+        if not settings.get("REDIS_STARTUP_NODES", False):
             server.ping()
 
         return cls(server=server, **kwargs)

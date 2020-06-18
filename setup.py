@@ -6,7 +6,7 @@ setup(
     name='scrapy-redis-sentinel',
     description="Redis Cluster for Scrapy.",
     long_description=open('README.rst', encoding="utf-8").read(),
-    version="0.2.2",
+    version="0.2.3",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
     url='https://github.com/crawlmap/scrapy-redis-sentinel.git',

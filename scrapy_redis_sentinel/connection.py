@@ -106,7 +106,7 @@ def get_redis_cluster_from_settings(settings):
     """
     params = defaults.REDIS_PARAMS.copy()
     params.update(settings.getdict("REDIS_CLUSTER_PARAMS"))
-    params.setdefault("startup_nodes", settings.get("REDIS_MASTER_NODES"))
+    params.setdefault("startup_nodes", settings.get("REDIS_STARTUP_NODES"))
     # XXX: Deprecate REDIS_* settings.
     for source, dest in REDIS_CLUSTER_SETTINGS_PARAMS_MAP.items():
         val = settings.get(source)
@@ -172,6 +172,6 @@ def from_settings(settings):
     """
     if "REDIS_SENTINELS" in settings:
         return get_redis_sentinel_from_settings(settings)
-    elif "REDIS_MASTER_NODES" in settings or "REDIS_CLUSTER_URL" in settings:
+    elif "REDIS_STARTUP_NODES" in settings or "REDIS_CLUSTER_URL" in settings:
         return get_redis_cluster_from_settings(settings)
     return get_redis_from_settings(settings)
