@@ -2,16 +2,16 @@
 
 ![PyPI](https://img.shields.io/pypi/v/scrapy-redis-sentinel)
 ![PyPI - License](https://img.shields.io/pypi/l/scrapy-redis-sentinel)
-![GitHub last commit](https://img.shields.io/github/last-commit/Sitoi/scrapy-redis-sentinel)
+![GitHub last commit](https://img.shields.io/github/last-commit/crawlmap/scrapy-redis-sentinel)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
 
 本项目基于原项目 [scrpy-redis](https://github.com/rmax/scrapy-redis)
 
 进行修改，修改内容如下：
 
-1. 添加了 Redis 哨兵连接支持
-2. 添加了 Redis 集群连接支持
-3. 添加了 Bloomfilter 去重
+1. 添加了 `Redis` 哨兵连接支持
+2. 添加了 `Redis` 集群连接支持
+3. 添加了 `Bloomfilter` 去重
 
 ## 安装 
 

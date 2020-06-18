@@ -9,7 +9,7 @@ setup(
     version="0.2.1",
     author="Shi Tao",
     author_email='shitao0418@gmail.com',
-    url='https://github.com/Sitoi/scrapy-redis-sentinel.git',
+    url='https://github.com/crawlmap/scrapy-redis-sentinel.git',
     packages=find_packages(),
     install_requires=[
         'Scrapy',
