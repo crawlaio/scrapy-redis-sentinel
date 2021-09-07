@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class HashMap(object):
     def __init__(self, m, seed):
         self.m = m

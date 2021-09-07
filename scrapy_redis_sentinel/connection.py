@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+import sys
+
 import six
 from scrapy.utils.misc import load_object
 
@@ -8,8 +11,12 @@ SETTINGS_PARAMS_MAP = {
     "REDIS_URL": "url",
     "REDIS_HOST": "host",
     "REDIS_PORT": "port",
+    "REDIS_DB": "db",
     "REDIS_ENCODING": "encoding"
 }
+
+if sys.version_info > (3,):
+    SETTINGS_PARAMS_MAP["REDIS_DECODE_RESPONSES"] = "decode_responses"
 
 
 def get_redis_from_settings(settings):

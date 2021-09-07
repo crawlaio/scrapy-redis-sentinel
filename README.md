@@ -5,7 +5,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/crawlmap/scrapy-redis-sentinel)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
 
-本项目基于原项目 [scrpy-redis](https://github.com/rmax/scrapy-redis)
+本项目基于原项目 [scrapy-redis](https://github.com/rmax/scrapy-redis)
 
 进行修改，修改内容如下：
 
@@ -13,7 +13,7 @@
 2. 添加了 `Redis` 集群连接支持
 3. 添加了 `Bloomfilter` 去重
 
-## 安装 
+## 安装
 
 ```bash
 pip install scrapy-redis-sentinel --user
@@ -21,7 +21,7 @@ pip install scrapy-redis-sentinel --user
 
 ## 配置示例
 
-> 原版本 scrpy-redis 的所有配置都支持, 优先级：哨兵模式 > 集群模式 > 单机模式
+> 原版本 scrapy-redis 的所有配置都支持, 优先级：哨兵模式 > 集群模式 > 单机模式
 
 ```python
 # ----------------------------------------Bloomfilter 配置-------------------------------------
@@ -55,8 +55,8 @@ REDIS_SENTINELS = [
 ]
 
 # REDIS_SENTINEL_PARAMS 哨兵模式配置参数。
-REDIS_SENTINEL_PARAMS= {
-    "service_name":"mymaster",
+REDIS_SENTINEL_PARAMS = {
+    "service_name": "mymaster",
     "password": "password",
     "db": 0
 }
@@ -71,18 +71,23 @@ REDIS_STARTUP_NODES = [
 ]
 
 # REDIS_CLUSTER_PARAMS 集群模式配置参数
-REDIS_CLUSTER_PARAMS= {
+REDIS_CLUSTER_PARAMS = {
     "password": "password"
 }
 
 # ----------------------------------------Scrapy 其他参数-------------------------------------
 
 # 在 redis 中保持 scrapy-redis 用到的各个队列，从而允许暂停和暂停后恢复，也就是不清理 redis queues
-SCHEDULER_PERSIST = True  
+SCHEDULER_PERSIST = True
 # 调度队列  
-SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"  
-# 去重 
-DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"  
+SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"
+# 基础去重
+DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
+# BloomFilter
+# DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisBloomFilter"
+
+# 启用基于 Redis 统计信息
+STATS_CLASS = "scrapy_redis_sentinel.stats.RedisStatsCollector"
 
 # 指定排序爬取地址时使用的队列
 # 默认的 按优先级排序( Scrapy 默认)，由 sorted set 实现的一种非 FIFO、LIFO 方式。
@@ -99,10 +104,11 @@ DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RFPDupeFilter"
 
 **修改 RedisSpider 引入方式**
 
-原版本 `scrpy-redis` 使用方式
+原版本 `scrapy-redis` 使用方式
 
 ```python
 from scrapy_redis.spiders import RedisSpider
+
 
 class Spider(RedisSpider):
     ...
@@ -113,6 +119,7 @@ class Spider(RedisSpider):
 
 ```python
 from scrapy_redis_sentinel.spiders import RedisSpider
+
 
 class Spider(RedisSpider):
     ...

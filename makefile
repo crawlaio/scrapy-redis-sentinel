@@ -1,7 +1,10 @@
-.PHONY: sdist upload
+.PHONY: clean sdist upload
 
 sdist:
-	 python setup.py sdist
+	python setup.py sdist bdist_wheel --universa
 
 upload:
-	twine upload dist/*
+	python setup.py upload
+
+clean:
+	rm -rf build scrapy_redis_sentinel.egg-info dist

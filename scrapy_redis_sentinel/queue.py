@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from rediscluster import RedisCluster
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
@@ -127,7 +128,7 @@ class PriorityQueue(Base):
             """
             script = self.server.register_script(pop_lua_script)
             results = [script(keys=[self.key])]
-        if results[0]:
+        if results:
             return self._decode_request(results[0])
 
 

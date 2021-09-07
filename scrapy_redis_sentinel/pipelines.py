@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from scrapy.utils.misc import load_object
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from twisted.internet.threads import deferToThread

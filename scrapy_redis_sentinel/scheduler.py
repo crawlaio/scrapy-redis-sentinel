@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import importlib
 
 import six
@@ -32,16 +33,16 @@ class Scheduler(object):
     """
 
     def __init__(
-            self,
-            server,
-            persist=False,
-            flush_on_start=False,
-            queue_key=defaults.SCHEDULER_QUEUE_KEY,
-            queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
-            dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
-            dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
-            idle_before_close=0,
-            serializer=None
+        self,
+        server,
+        persist=False,
+        flush_on_start=False,
+        queue_key=defaults.SCHEDULER_QUEUE_KEY,
+        queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
+        dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
+        dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
+        idle_before_close=0,
+        serializer=None
     ):
         """Initialize scheduler.
 

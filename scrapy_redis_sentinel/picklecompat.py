@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """A pickle wrapper module with protocol=-1 by default."""
 
 try:
