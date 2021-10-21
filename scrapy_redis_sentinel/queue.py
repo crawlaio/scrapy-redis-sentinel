@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rediscluster import RedisCluster
-from scrapy.utils.reqser import request_to_dict, request_from_dict
+from scrapy.utils.reqser import request_from_dict, request_to_dict
 
 from . import picklecompat
 
@@ -114,22 +114,24 @@ class PriorityQueue(Base):
             pipe.multi()
             pipe.zrange(self.key, 0, 0).zremrangebyrank(self.key, 0, 0)
             results, count = pipe.execute()
-        else:
-            # 使用集群的时候不能使用 multi/exec 来完成一个事务操作；使用lua脚本来实现类似功能
-            pop_lua_script = """
-            local result = redis.call('zrange', KEYS[1], 0, 0)
-            local element = result[1]
-            if element then
-                redis.call('zremrangebyrank', KEYS[1], 0, 0)
-                return element
-            else
-                return nil
-            end
-            """
-            script = self.server.register_script(pop_lua_script)
-            results = [script(keys=[self.key])]
+            if results:
+                return self._decode_request(results[0])
+
+        # 使用集群的时候不能使用 multi/exec 来完成一个事务操作；使用lua脚本来实现类似功能
+        pop_lua_script = """
+        local result = redis.call('zrange', KEYS[1], 0, 0)
+        local element = result[1]
+        if element then
+            redis.call('zremrangebyrank', KEYS[1], 0, 0)
+            return element
+        else
+            return nil
+        end
+        """
+        script = self.server.register_script(pop_lua_script)
+        results = script(keys=[self.key])
         if results:
-            return self._decode_request(results[0])
+            return self._decode_request(results)
 
 
 class LifoQueue(Base):
