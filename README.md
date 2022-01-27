@@ -53,6 +53,8 @@ REDIS_SENTINELS = [
     ('172.25.2.26', 26379),
     ('172.25.2.27', 26379)
 ]
+# SENTINEL_KWARGS 非必须参数，可以设置sentinel密码，参考 https://github.com/redis/redis-py/issues/1219
+SENTINEL_KWARGS = {'password': 'sentinel_password'}
 
 # REDIS_SENTINEL_PARAMS 哨兵模式配置参数。
 REDIS_SENTINEL_PARAMS = {
