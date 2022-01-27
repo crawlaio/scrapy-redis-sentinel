@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import time
-from collections import Iterable
+
+try:
+    from collections import Iterable
+except:
+    from collections.abc import Iterable
 
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
