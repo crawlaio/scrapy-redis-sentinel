@@ -5,6 +5,16 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/crawlmap/scrapy-redis-sentinel)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
 
+本项目基于原项目 [scrapy-redis-sentinel](https://github.com/crawlaio/scrapy-redis-sentinel)
+
+进行修改，修改内容如下：
+
+1. 添加了 Redis 哨兵，存在2个密码连接的支持
+2. 支持Python3.8+(collection.abc的引入方式)
+3. 填补 `dupefilter.py` 丢失的 "dupefilter/filtered" 的stats，利于爬虫进度数据分析
+
+-----
+
 本项目基于原项目 [scrapy-redis](https://github.com/rmax/scrapy-redis)
 
 进行修改，修改内容如下：
