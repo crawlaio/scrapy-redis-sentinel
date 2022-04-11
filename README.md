@@ -92,22 +92,22 @@ REDIS_CLUSTER_PARAMS = {
 # 在 redis 中保持 scrapy-redis 用到的各个队列，从而允许暂停和暂停后恢复，也就是不清理 redis queues
 SCHEDULER_PERSIST = True
 # 调度队列  
-SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"
+SCHEDULER = "mob_scrapy_redis_sentinel.scheduler.Scheduler"
 # 基础去重
-DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
+DUPEFILTER_CLASS = "mob_scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
 # BloomFilter
-# DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisBloomFilter"
+# DUPEFILTER_CLASS = "mob_scrapy_redis_sentinel.dupefilter.RedisBloomFilter"
 
 # 启用基于 Redis 统计信息
-STATS_CLASS = "scrapy_redis_sentinel.stats.RedisStatsCollector"
+STATS_CLASS = "mob_scrapy_redis_sentinel.stats.RedisStatsCollector"
 
 # 指定排序爬取地址时使用的队列
 # 默认的 按优先级排序( Scrapy 默认)，由 sorted set 实现的一种非 FIFO、LIFO 方式。
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderPriorityQueue'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderPriorityQueue'
 # 可选的 按先进先出排序（FIFO）
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderStack'
 # 可选的 按后进先出排序（LIFO）
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderStack'
 ```
 
 > 注：当使用集群时单机不生效

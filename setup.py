@@ -8,7 +8,7 @@ from shutil import rmtree
 from setuptools import Command, find_packages, setup
 
 NAME = "scrapy-redis-sentinel"
-FOLDER = "scrapy_redis_sentinel"
+FOLDER = "mob_scrapy_redis_sentinel"
 DESCRIPTION = "Redis Cluster for Scrapy."
 EMAIL = "shitao0418@gmail.com"
 AUTHOR = "Shi Tao"

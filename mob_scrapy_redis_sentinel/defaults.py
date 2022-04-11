@@ -24,9 +24,9 @@ REDIS_PARAMS = {
 }
 
 SCHEDULER_QUEUE_KEY = "%(spider)s:requests"
-SCHEDULER_QUEUE_CLASS = "scrapy_redis_sentinel.queue.PriorityQueue"
+SCHEDULER_QUEUE_CLASS = "mob_scrapy_redis_sentinel.queue.PriorityQueue"
 SCHEDULER_DUPEFILTER_KEY = "%(spider)s:dupefilter"
-SCHEDULER_DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
+SCHEDULER_DUPEFILTER_CLASS = "mob_scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
 
 SCHEDULER_PERSIST = False
 
