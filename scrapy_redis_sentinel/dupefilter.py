@@ -159,6 +159,8 @@ class RedisDupeFilter(BaseDupeFilter):
             self.logger.debug(msg, {"request": request}, extra={"spider": spider})
             self.logdupes = False
 
+        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+
 
 class RedisBloomFilter(BaseDupeFilter):
     """Redis-based request duplicates filter.
