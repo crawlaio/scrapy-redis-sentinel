@@ -13,6 +13,10 @@ from scrapy.spiders import Spider, CrawlSpider
 from . import connection, defaults
 from .utils import bytes_to_str
 
+from mob_scrapy_redis_sentinel import mob_log
+import json
+from mob_scrapy_redis_sentinel.utils import make_md5
+
 
 class RedisMixin(object):
     """Mixin class to implement reading urls from a redis queue."""
@@ -114,6 +118,16 @@ class RedisMixin(object):
         found = 0
         datas = self.fetch_data(self.redis_key, self.redis_batch_size)
         for data in datas:
+
+            # 日志加入track_id
+            try:
+                queue_data = json.loads(data)
+            except:
+                queue_data = {}
+            keyword = queue_data.get("keyword")
+            track_id = make_md5(keyword)
+            mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
+
             reqs = self.make_request_from_data(data)
             if isinstance(reqs, Iterable):
                 for req in reqs:

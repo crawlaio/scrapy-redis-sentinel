@@ -6,6 +6,9 @@ from scrapy.utils.misc import load_object
 
 from . import connection, defaults
 
+from mob_scrapy_redis_sentinel import mob_log
+from mob_scrapy_redis_sentinel.utils import get_track_id
+
 
 # TODO: add SCRAPY_JOB support.
 class Scheduler(object):
@@ -33,16 +36,16 @@ class Scheduler(object):
     """
 
     def __init__(
-        self,
-        server,
-        persist=False,
-        flush_on_start=False,
-        queue_key=defaults.SCHEDULER_QUEUE_KEY,
-        queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
-        dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
-        dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
-        idle_before_close=0,
-        serializer=None
+            self,
+            server,
+            persist=False,
+            flush_on_start=False,
+            queue_key=defaults.SCHEDULER_QUEUE_KEY,
+            queue_cls=defaults.SCHEDULER_QUEUE_CLASS,
+            dupefilter_key=defaults.SCHEDULER_DUPEFILTER_KEY,
+            dupefilter_cls=defaults.SCHEDULER_DUPEFILTER_CLASS,
+            idle_before_close=0,
+            serializer=None
     ):
         """Initialize scheduler.
 
@@ -174,7 +177,9 @@ class Scheduler(object):
     def next_request(self):
         block_pop_timeout = self.idle_before_close
         request = self.queue.pop(block_pop_timeout)
+
         if request and self.stats:
+            mob_log.info(f"get request from next_request: spider name: {self.spider.name}, {request.__dict__}").track_id(get_track_id(request)).commit()
             self.stats.inc_value("scheduler/dequeued/redis", spider=self.spider)
         return request
 
