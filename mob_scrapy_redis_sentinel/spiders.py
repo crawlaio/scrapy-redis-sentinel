@@ -124,8 +124,7 @@ class RedisMixin(object):
                 queue_data = json.loads(data)
             except:
                 queue_data = {}
-            keyword = queue_data.get("keyword")
-            track_id = make_md5(keyword)
+            track_id = make_md5(queue_data)
             mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
 
             reqs = self.make_request_from_data(data)
