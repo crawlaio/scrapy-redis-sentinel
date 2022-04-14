@@ -12,6 +12,7 @@
 1. 添加了 Redis 哨兵，存在2个密码连接的支持
 2. 支持Python3.8+(collection.abc的引入方式)
 3. 填补 `dupefilter.py` 丢失的 "dupefilter/filtered" 的stats，利于爬虫进度数据分析
+4. 自动添加 track_id: "make request from data" 和 "get request from next_request "
 
 -----
 
