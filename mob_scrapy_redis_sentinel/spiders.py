@@ -132,44 +132,21 @@ class RedisMixin(object):
         #     for data in datas:
         #         pipe.rpush(self.latest_queue, data)
         #     pipe.execute()
-        self.server.hset(self.latest_queue, inner_ip, datas)
+        self.server.hset(self.latest_queue, inner_ip, json.dumps(json.loads(datas), ensure_ascii=False))
 
     def spider_opened_latest_pop(self):
         """绑定spider open信号； 取出 stop spider前，最后1次datas"""
         mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
         if self.server.hexists(self.latest_queue, inner_ip):
-            for req in self._spider_opened_latest_pop():
-                self.crawler.engine.crawl(req, spider=self)
+            self._spider_opened_latest_pop()
 
     def _spider_opened_latest_pop(self):
         # hash
         datas = self.server.hget(self.latest_queue, inner_ip)
         self.server.hdel(self.latest_queue, inner_ip)
-        found = 0
         for data in datas:
-            # 日志加入track_id
-            try:
-                queue_data = json.loads(data)
-            except:
-                queue_data = {}
-            track_id = make_md5(queue_data)
-            mob_log.info(f"spider name: {self.name}, make request from data from latest queue, queue_data: {queue_data}").track_id(track_id).commit()
-
-            reqs = self.make_request_from_data(data)
-            if isinstance(reqs, Iterable):
-                for req in reqs:
-                    yield req
-                    # XXX: should be here?
-                    found += 1
-                    self.logger.info(f"start req url:{req.url}")
-            elif reqs:
-                yield reqs
-                found += 1
-            else:
-                self.logger.debug("Request not made from data: %r", data)
-
-        if found:
-            self.logger.debug("Read %s requests from '%s'", found, self.redis_key)
+            mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}").track_id("").commit()
+            self.server.lpush(self.redis_key, json.dumps(json.loads(data), ensure_ascii=False))
         # if self.count_size(self.latest_queue) == 0:
         #     return
         # datas = self.fetch_data(self.latest_queue, self.redis_batch_size)
