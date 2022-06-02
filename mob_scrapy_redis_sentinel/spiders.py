@@ -175,6 +175,7 @@ class RedisMixin(object):
         # XXX: Do we need to use a timeout here?
         found = 0
         datas = self.fetch_data(self.redis_key, self.redis_batch_size)
+        self.latest_queue_mark(datas)
         for data in datas:
             # 日志加入track_id
             try:
@@ -199,8 +200,6 @@ class RedisMixin(object):
 
         if found:
             self.logger.debug("Read %s requests from '%s'", found, self.redis_key)
-
-        self.latest_queue_mark(datas)
 
     def make_request_from_data(self, data):
         """Returns a Request instance from data coming from Redis.
