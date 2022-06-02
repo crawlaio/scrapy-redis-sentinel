@@ -16,12 +16,14 @@ from .utils import bytes_to_str
 from mob_scrapy_redis_sentinel import mob_log
 import json
 from mob_scrapy_redis_sentinel.utils import make_md5
+from mob_scrapy_redis_sentinel import inner_ip
 
 
 class RedisMixin(object):
     """Mixin class to implement reading urls from a redis queue."""
 
     redis_key = None
+    latest_queue = None
     redis_batch_size = None
     redis_encoding = None
 
@@ -62,6 +64,10 @@ class RedisMixin(object):
         if not self.redis_key.strip():
             raise ValueError("redis_key must not be empty")
 
+        if self.latest_queue is None:
+            self.latest_queue = settings.get("LATEST_QUEUE_KEY", defaults.LATEST_QUEUE_KEY)
+        self.latest_queue = self.latest_queue % {"name": self.name}
+
         if self.redis_batch_size is None:
             # TODO: Deprecate this setting (REDIS_START_URLS_BATCH_SIZE).
             self.redis_batch_size = settings.getint(
@@ -98,6 +104,9 @@ class RedisMixin(object):
         # that's when we will schedule new requests from redis queue
         crawler.signals.connect(self.spider_idle, signal=signals.spider_idle)
 
+        # 爬虫启动时，会先从备份队列，取出任务
+        crawler.signals.connect(self.spider_opened_latest_pop, signal=signals.spider_opened)
+
     def pop_list_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
             pipe.lrange(redis_key, 0, batch_size - 1)
@@ -112,13 +121,34 @@ class RedisMixin(object):
             datas, _ = pipe.execute()
         return datas
 
-    def next_requests(self):
-        """Returns a request to be scheduled or none."""
-        # XXX: Do we need to use a timeout here?
-        found = 0
-        datas = self.fetch_data(self.redis_key, self.redis_batch_size)
-        for data in datas:
+    def latest_queue_mark(self, datas):
+        """备份队列 list or hash"""
+        # 1、删除上一次（多个worker，如何保证删除的一致性）
+        # self.server.delete(self.latest_queue)
+        mob_log.info(f"spider name: {self.name}, latest_queue_mark, inner_ip: {inner_ip}").track_id("").commit()
+        self.server.hdel(self.latest_queue, inner_ip)
+        # 2、 存入
+        # with self.server.pipeline() as pipe:
+        #     for data in datas:
+        #         pipe.rpush(self.latest_queue, data)
+        #     pipe.execute()
+        self.server.hset(self.latest_queue, inner_ip, datas)
 
+    def spider_opened_latest_pop(self):
+        """绑定spider open信号； 取出 stop spider前，最后1次datas"""
+        # hash
+        mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
+        if self.server.hexists(self.latest_queue, inner_ip):
+            datas = self.server.hget(self.latest_queue, inner_ip)
+            self.server.hdel(self.latest_queue, inner_ip)
+            self.req_yield(datas)
+        # if self.count_size(self.latest_queue) == 0:
+        #     return
+        # datas = self.fetch_data(self.latest_queue, self.redis_batch_size)
+
+    def req_yield(self, datas):
+        found = 0
+        for data in datas:
             # 日志加入track_id
             try:
                 queue_data = json.loads(data)
@@ -142,6 +172,12 @@ class RedisMixin(object):
 
         if found:
             self.logger.debug("Read %s requests from '%s'", found, self.redis_key)
+
+    def next_requests(self):
+        """Returns a request to be scheduled or none."""
+        # XXX: Do we need to use a timeout here?
+        datas = self.fetch_data(self.redis_key, self.redis_batch_size)
+        self.req_yield(datas)
 
     def make_request_from_data(self, data):
         """Returns a Request instance from data coming from Redis.
