@@ -143,7 +143,7 @@ class RedisMixin(object):
         if self.server.hexists(self.latest_queue, inner_ip):
             latest_datas = self.server.hget(self.latest_queue, inner_ip)
             self.server.hdel(self.latest_queue, inner_ip)
-            for data in latest_datas:
+            for data in eval(bytes_to_str(latest_datas)):
                 mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}, latest_datas: {latest_datas}").track_id("").commit()
                 self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
 
