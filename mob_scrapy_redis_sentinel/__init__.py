@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 __original_author__ = "Rolando Espinoza"
-__author__ = "Shi Tao"
-__email__ = "shitao0418@gmail.com"
-__version__ = "0.7.2"
+__author__ = "luzihang"
+__email__ = "luzihang@mob.com"
+__version__ = "0.5"
 
 from mob_tools.mobLog import MobLoguru
 from mob_tools.inner_ip import get_inner_ip
