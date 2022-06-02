@@ -125,7 +125,6 @@ class RedisMixin(object):
         """备份队列 list or hash"""
         # 1、删除上一次（多个worker，如何保证删除的一致性）
         # self.server.delete(self.latest_queue)
-        mob_log.info(f"spider name: {self.name}, latest_queue_mark, inner_ip: {inner_ip}").track_id("").commit()
         self.server.hdel(self.latest_queue, inner_ip)
         # 2、 存入
         # with self.server.pipeline() as pipe:
@@ -135,6 +134,7 @@ class RedisMixin(object):
         latest_datas = []
         for data in datas:
             latest_datas.append(json.loads(data))
+        mob_log.info(f"spider name: {self.name}, latest_queue_mark, inner_ip: {inner_ip}, latest_datas: {latest_datas}").track_id("").commit()
         self.server.hset(self.latest_queue, inner_ip, latest_datas)
 
     def spider_opened_latest_pop(self):
@@ -144,7 +144,7 @@ class RedisMixin(object):
             latest_datas = self.server.hget(self.latest_queue, inner_ip)
             self.server.hdel(self.latest_queue, inner_ip)
             for data in eval(bytes_to_str(latest_datas)):
-                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}, latest_datas: {latest_datas}").track_id("").commit()
+                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}, latest_datas: {bytes_to_str(latest_datas)}").track_id("").commit()
                 self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
 
         # if self.count_size(self.latest_queue) == 0:
