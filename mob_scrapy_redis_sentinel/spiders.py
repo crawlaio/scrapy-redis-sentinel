@@ -100,12 +100,12 @@ class RedisMixin(object):
             self.fetch_data = self.pop_list_queue
             self.count_size = self.server.llen
 
+        # 爬虫启动时，会先从备份队列，取出任务
+        crawler.signals.connect(self.spider_opened_latest_pop, signal=signals.spider_opened)
+
         # The idle signal is called when the spider has no requests left,
         # that's when we will schedule new requests from redis queue
         crawler.signals.connect(self.spider_idle, signal=signals.spider_idle)
-
-        # 爬虫启动时，会先从备份队列，取出任务
-        crawler.signals.connect(self.spider_opened_latest_pop, signal=signals.spider_opened)
 
     def pop_list_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
@@ -141,13 +141,40 @@ class RedisMixin(object):
         if self.server.hexists(self.latest_queue, inner_ip):
             datas = self.server.hget(self.latest_queue, inner_ip)
             self.server.hdel(self.latest_queue, inner_ip)
-            self.req_yield(datas)
+            found = 0
+            for data in datas:
+                # 日志加入track_id
+                try:
+                    queue_data = json.loads(data)
+                except:
+                    queue_data = {}
+                track_id = make_md5(queue_data)
+                mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
+
+                reqs = self.make_request_from_data(data)
+                if isinstance(reqs, Iterable):
+                    for req in reqs:
+                        yield req
+                        # XXX: should be here?
+                        found += 1
+                        self.logger.info(f"start req url:{req.url}")
+                elif reqs:
+                    yield reqs
+                    found += 1
+                else:
+                    self.logger.debug("Request not made from data: %r", data)
+
+            if found:
+                self.logger.debug("Read %s requests from '%s'", found, self.redis_key)
         # if self.count_size(self.latest_queue) == 0:
         #     return
         # datas = self.fetch_data(self.latest_queue, self.redis_batch_size)
 
-    def req_yield(self, datas):
+    def next_requests(self):
+        """Returns a request to be scheduled or none."""
+        # XXX: Do we need to use a timeout here?
         found = 0
+        datas = self.fetch_data(self.redis_key, self.redis_batch_size)
         for data in datas:
             # 日志加入track_id
             try:
@@ -173,11 +200,7 @@ class RedisMixin(object):
         if found:
             self.logger.debug("Read %s requests from '%s'", found, self.redis_key)
 
-    def next_requests(self):
-        """Returns a request to be scheduled or none."""
-        # XXX: Do we need to use a timeout here?
-        datas = self.fetch_data(self.redis_key, self.redis_batch_size)
-        self.req_yield(datas)
+        self.latest_queue_mark(datas)
 
     def make_request_from_data(self, data):
         """Returns a Request instance from data coming from Redis.
