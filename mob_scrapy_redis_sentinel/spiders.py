@@ -141,15 +141,12 @@ class RedisMixin(object):
         """绑定spider open信号； 取出 stop spider前，最后1次datas"""
         mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
         if self.server.hexists(self.latest_queue, inner_ip):
-            self._spider_opened_latest_pop()
+            latest_datas = self.server.hget(self.latest_queue, inner_ip)
+            self.server.hdel(self.latest_queue, inner_ip)
+            for data in latest_datas:
+                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}, latest_datas: {latest_datas}").track_id("").commit()
+                self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
 
-    def _spider_opened_latest_pop(self):
-        # hash
-        latest_datas = self.server.hget(self.latest_queue, inner_ip)
-        self.server.hdel(self.latest_queue, inner_ip)
-        for data in latest_datas:
-            mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}").track_id("").commit()
-            self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
         # if self.count_size(self.latest_queue) == 0:
         #     return
         # datas = self.fetch_data(self.latest_queue, self.redis_batch_size)
