@@ -136,8 +136,12 @@ class RedisMixin(object):
 
     def spider_opened_latest_pop(self):
         """绑定spider open信号； 取出 stop spider前，最后1次datas"""
-        # hash
         mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
+        for req in self._spider_opened_latest_pop():
+            self.crawler.engine.crawl(req, spider=self)
+
+    def _spider_opened_latest_pop(self):
+        # hash
         if self.server.hexists(self.latest_queue, inner_ip):
             datas = self.server.hget(self.latest_queue, inner_ip)
             self.server.hdel(self.latest_queue, inner_ip)
