@@ -142,9 +142,10 @@ class RedisMixin(object):
         mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
         if self.server.hexists(self.latest_queue, inner_ip):
             latest_datas = self.server.hget(self.latest_queue, inner_ip)
+            mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, latest_datas: {bytes_to_str(latest_datas)}").track_id("").commit()
             self.server.hdel(self.latest_queue, inner_ip)
             for data in eval(bytes_to_str(latest_datas)):
-                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}, latest_datas: {bytes_to_str(latest_datas)}").track_id("").commit()
+                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}").track_id("").commit()
                 self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
 
         # if self.count_size(self.latest_queue) == 0:
