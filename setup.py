@@ -1,104 +1,75 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import io
+# !/usr/bin/env python
+# _*_coding: utf-8 _*_
+
+import codecs
 import os
-import sys
-from shutil import rmtree
-
-from setuptools import Command, find_packages, setup
-
-NAME = "mob-scrapy-redis-sentinel"
-FOLDER = "mob_scrapy_redis_sentinel"
-DESCRIPTION = "Redis Cluster for Scrapy."
-EMAIL = "luzhang@mob.com"
-AUTHOR = "luzihang"
-REQUIRES_PYTHON = ">=3.6.0"
-VERSION = None
-
-
-def read_file(filename):
-    with open(filename) as fp:
-        return fp.read().strip()
-
-
-def read_requirements(filename):
-    return [line.strip() for line in read_file(filename).splitlines() if not line.startswith("#")]
-
-
-REQUIRED = read_requirements("requirements.txt")
-
-here = os.path.abspath(os.path.dirname(__file__))
 
 try:
-    with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
-        long_description = "\n" + f.read()
-except FileNotFoundError:
-    long_description = DESCRIPTION
-print(long_description)
-about = {}
-if not VERSION:
-    with open(os.path.join(here, FOLDER, "__init__.py")) as f:
-        exec(f.read(), about)
-else:
-    about["__version__"] = VERSION
+    from setuptools import setup
+except:
+    from distutils.core import setup
+"""
+打包的用的setup必须引入，
+"""
 
 
-class UploadCommand(Command):
-    description = "Build and publish the package."
-    user_options = []
+def read(fname):
+    """
+    定义一个read方法，用来读取目录下的长描述
+    我们一般是将README文件中的内容读取出来作为长描述，这个会在PyPI中你这个包的页面上展现出来，
+    你也可以不用这个方法，自己手动写内容即可，
+    PyPI上支持.rst格式的文件。暂不支持.md格式的文件，<BR>.rst文件PyPI会自动把它转为HTML形式显示在你包的信息页面上。
+    """
+    return codecs.open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print("\033[1m{0}\033[0m".format(s))
 
-    def initialize_options(self):
-        pass
+# 名字，一般放你包的名字即可
+NAME = "mob_scrapy_redis_sentinel"
 
-    def finalize_options(self):
-        pass
+# 包含的包，可以多个，这是一个列表
+PACKAGES = ["mob_scrapy_redis_sentinel"]
 
-    def run(self):
-        try:
-            self.status("Removing previous builds…")
-            rmtree(os.path.join(here, "dist"))
-        except OSError:
-            pass
+# 关于这个包的描述
+DESCRIPTION = "this is a tool package for mobTech."
 
-        self.status("Building Source and Wheel (universal) distribution…")
-        os.system("{0} setup.py sdist bdist_wheel --universal".format(sys.executable))
+# 参见 read 方法说明
+LONG_DESCRIPTION = read("README.md")
 
-        self.status("Uploading the package to PyPI via Twine…")
-        os.system("twine upload dist/*")
+# 当前包的一些关键字，方便PyPI进行分类
+KEYWORDS = "mob utils"
 
-        sys.exit()
+# 作者
+AUTHOR = "LuZiHang"
 
+# 作者邮箱
+AUTHOR_EMAIL = "luzihang@mob.com"
+
+# 你这个包的项目地址
+URL = "https://github.com/pypa/sampleproject"
+
+# 自己控制的版本号
+VERSION = "0.5"
+
+# 授权方式
+LICENSE = "MIT"
 
 setup(
     name=NAME,
-    version=about["__version__"],
+    version=VERSION,
     description=DESCRIPTION,
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    author=AUTHOR,
-    author_email=EMAIL,
-    url='https://github.com/crawlmap/scrapy-redis-sentinel.git',
-    project_urls={"Documentation": "https://crawlaio.com/scrapy-redis-sentinel/"},
-    packages=find_packages(),
-    install_requires=REQUIRED,
-    license="MIT",
-    zip_safe=False,
-    keywords=[
-        'scrapy-redis',
-        'scrapy-redis-sentinel',
-        'scrapy-redis-cluster'
-    ],
+    long_description=LONG_DESCRIPTION,
     classifiers=[
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
     ],
-    cmdclass={"upload": UploadCommand},
+    keywords=KEYWORDS,
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
+    url=URL,
+    license=LICENSE,
+    packages=PACKAGES,
+    include_package_data=True,
+    zip_safe=True,
 )
