@@ -18,6 +18,10 @@ import json
 from mob_scrapy_redis_sentinel.utils import make_md5
 from mob_scrapy_redis_sentinel import inner_ip
 
+import requests
+import base64
+import traceback
+
 
 class RedisMixin(object):
     """Mixin class to implement reading urls from a redis queue."""
@@ -96,6 +100,9 @@ class RedisMixin(object):
         elif self.settings.getbool("REDIS_START_URLS_AS_ZSET", defaults.START_URLS_AS_ZSET):
             self.fetch_data = self.pop_priority_queue
             self.count_size = self.server.zcard
+        elif self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+            self.fetch_data = self.pop_batch_mq
+            self.count_size = self.get_queue_size
         else:
             self.fetch_data = self.pop_list_queue
             self.count_size = self.server.llen
@@ -113,6 +120,35 @@ class RedisMixin(object):
             pipe.ltrim(redis_key, batch_size, -1)
             datas, _ = pipe.execute()
         return datas
+
+    def get_queue_size(self, queue_name):
+        try:
+            r = requests.get(defaults.GET_QUEUE_SIZE.format(queueName=queue_name), timeout=5)
+            return r.json()['data']['queueSize']
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, get mq queue size error: {traceback.format_exc()}").track_id("").commit()
+
+    def pop_batch_mq(self, redis_key, batch_size):
+        """
+        redis_key: mq队列名称默认和redis_key同名
+        batch_size: 批量取用
+        """
+        datas = []
+        for i in range(batch_size):
+            queue_data = self.pop_mq(queue_name=redis_key)
+            datas.append(queue_data)
+        return datas
+
+    def pop_mq(self, queue_name):
+        try:
+            r = requests.get(defaults.POP_MESSAGE.format(queueName=queue_name), timeout=5)
+            resp = r.json()
+            if resp.get("error_code") == 0 and resp.get("data"):
+                message = resp["data"]["message"]
+                queue_data = base64.b64decode(message)
+                return queue_data
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, pop mq error: {traceback.format_exc()}").track_id("").commit()
 
     def pop_priority_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:

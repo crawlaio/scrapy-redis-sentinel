@@ -40,3 +40,14 @@ spider opened，读取 LATEST_QUEUE_KEY。获取上一次，stop 之前，最后
 每次make request from data，备份一份数据，到 LATEST_QUEUE_KEY。同时删除上一批的备份。（多个worker，删除同一个 LATEST_QUEUE_KEY，如何做到不互相干扰？）
 """
 LATEST_QUEUE_KEY = "%(name)s:latest_queue"
+
+"""
+从MQ获取任务
+"""
+MQ_USED = False  # 默认关闭
+
+MQ_HOST = "http://10.89.104.148:10011"
+# 从指定队列中取出消息
+POP_MESSAGE = MQ_HOST + "/rest/ms/GemMQ/popMessage?queueName={queueName}"
+# 获取消息队列的大小
+GET_QUEUE_SIZE = MQ_HOST + "/rest/ms/GemMQ/getQueueSize?queueName={queueName}"
