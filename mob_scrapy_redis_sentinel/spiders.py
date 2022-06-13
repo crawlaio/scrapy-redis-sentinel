@@ -124,7 +124,7 @@ class RedisMixin(object):
     def get_queue_size(self, queue_name):
         try:
             r = requests.get(defaults.GET_QUEUE_SIZE.format(queueName=queue_name), timeout=5)
-            return r.json()['data']['queueSize']
+            return int(r.json()['data']['queueSize'])
         except:
             mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, get mq queue size error: {traceback.format_exc()}").track_id("").commit()
 
