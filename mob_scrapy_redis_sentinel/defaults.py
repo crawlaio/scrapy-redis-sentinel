@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import redis
-
+import os
 import rediscluster
 from redis.sentinel import Sentinel
 
@@ -51,3 +51,9 @@ MQ_HOST = "http://10.89.104.148:10011"
 POP_MESSAGE = MQ_HOST + "/rest/ms/GemMQ/popMessage?queueName={queueName}"
 # 获取消息队列的大小
 GET_QUEUE_SIZE = MQ_HOST + "/rest/ms/GemMQ/getQueueSize?queueName={queueName}"
+
+# 与环境相关的配置
+if os.getenv('env') == 'prod':
+    QUEUE_NAME_PREFIX = "CRAWLER-UQ-{}"
+else:
+    QUEUE_NAME_PREFIX = "CRAWLER-SANDBOX-UQ-{}"

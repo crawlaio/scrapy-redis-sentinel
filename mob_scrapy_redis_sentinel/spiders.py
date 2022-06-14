@@ -25,7 +25,7 @@ import traceback
 
 class RedisMixin(object):
     """Mixin class to implement reading urls from a redis queue."""
-
+    queue_name = None  # mob rocket mq name
     redis_key = None
     latest_queue = None
     redis_batch_size = None
@@ -64,6 +64,9 @@ class RedisMixin(object):
             self.redis_key = settings.get("REDIS_START_URLS_KEY", defaults.START_URLS_KEY)
 
         self.redis_key = self.redis_key % {"name": self.name}
+
+        if settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用了mq, 区分和生产队列名称
+            self.queue_name = defaults.QUEUE_NAME_PREFIX.format(self.redis_key)
 
         if not self.redis_key.strip():
             raise ValueError("redis_key must not be empty")
@@ -121,21 +124,17 @@ class RedisMixin(object):
             datas, _ = pipe.execute()
         return datas
 
-    def get_queue_size(self, queue_name):
+    def get_queue_size(self, redis_key):
         try:
-            r = requests.get(defaults.GET_QUEUE_SIZE.format(queueName=queue_name), timeout=5)
+            r = requests.get(defaults.GET_QUEUE_SIZE.format(queueName=self.queue_name), timeout=5)
             return int(r.json()['data']['queueSize'])
         except:
             mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, get mq queue size error: {traceback.format_exc()}").track_id("").commit()
 
     def pop_batch_mq(self, redis_key, batch_size):
-        """
-        redis_key: mq队列名称默认和redis_key同名
-        batch_size: 批量取用
-        """
         datas = []
         for i in range(batch_size):
-            queue_data = self.pop_mq(queue_name=redis_key)
+            queue_data = self.pop_mq(self.queue_name)
             if queue_data:
                 datas.append(queue_data)
         return datas
@@ -150,6 +149,24 @@ class RedisMixin(object):
                 return queue_data
         except:
             mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, pop mq error: {traceback.format_exc()}").track_id("").commit()
+
+    def send_message2mq(self, queue_name, queue_data, priority=0, delay_seconds=""):
+        """
+        发送消息到指定队列
+        """
+        try:
+            message = (base64.b64encode(queue_data.encode())).decode()
+            form_data = {
+                "message": message,
+                "queueName": queue_name,
+                "priority": priority,
+                "delaySeconds": delay_seconds
+            }
+            r = requests.post(f"{defaults.MQ_HOST}/rest/ms/GemMQ/sendMessage", json=form_data)
+            resp = r.json()
+            mob_log.info(f"spider name: {self.name}, inner ip: {inner_ip}, send message to mq success, resp: {resp}").track_id("").commit()
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, send message to mq error: {traceback.format_exc()}").track_id("").commit()
 
     def pop_priority_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
@@ -170,7 +187,7 @@ class RedisMixin(object):
         #     pipe.execute()
         latest_datas = []
         for data in datas:
-            latest_datas.append(json.loads(data))
+            latest_datas.append(bytes_to_str(data))
         mob_log.info(f"spider name: {self.name}, latest_queue_mark, inner_ip: {inner_ip}, latest_datas: {latest_datas}").track_id("").commit()
         self.server.hset(self.latest_queue, inner_ip, latest_datas)
 
@@ -183,7 +200,10 @@ class RedisMixin(object):
             self.server.hdel(self.latest_queue, inner_ip)
             for data in eval(bytes_to_str(latest_datas)):
                 mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}").track_id("").commit()
-                self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
+                if self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+                    self.send_message2mq(queue_name=self.queue_name, queue_data=str(data), priority=1)
+                else:  # 使用reids
+                    self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
 
         # if self.count_size(self.latest_queue) == 0:
         #     return
@@ -200,7 +220,7 @@ class RedisMixin(object):
             try:
                 queue_data = json.loads(data)
             except:
-                queue_data = {}
+                queue_data = bytes_to_str(data)
             track_id = make_md5(queue_data)
             mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
 
