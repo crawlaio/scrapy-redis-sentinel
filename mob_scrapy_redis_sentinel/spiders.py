@@ -136,7 +136,8 @@ class RedisMixin(object):
         datas = []
         for i in range(batch_size):
             queue_data = self.pop_mq(queue_name=redis_key)
-            datas.append(queue_data)
+            if queue_data:
+                datas.append(queue_data)
         return datas
 
     def pop_mq(self, queue_name):
