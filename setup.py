@@ -13,7 +13,7 @@ DESCRIPTION = "Redis Cluster for Scrapy."
 EMAIL = "luzhang@mob.com"
 AUTHOR = "luzihang"
 REQUIRES_PYTHON = ">=3.6.0"
-VERSION = 0.7
+VERSION = 0.8
 
 
 def read_file(filename):

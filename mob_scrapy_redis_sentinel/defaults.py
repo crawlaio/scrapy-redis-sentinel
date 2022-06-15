@@ -56,9 +56,8 @@ GET_QUEUE_SIZE = MQ_HOST + "/rest/ms/GemMQ/getQueueSize?queueName={queueName}"
 
 # 与环境相关的配置
 PRODUCTION_ENV_TAG = '10.90'
-local_ip = os.getenv("LOCAL_IP", inner_ip)
 # 不是以10.90开头的，认为是非生产环境
-if local_ip.startswith(PRODUCTION_ENV_TAG):
+if inner_ip.startswith(PRODUCTION_ENV_TAG):
     QUEUE_NAME_PREFIX = "CRAWLER-UQ-{}"
 else:
     QUEUE_NAME_PREFIX = "CRAWLER-SANDBOX-UQ-{}"
