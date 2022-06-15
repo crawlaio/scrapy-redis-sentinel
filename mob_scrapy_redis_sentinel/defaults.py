@@ -62,5 +62,3 @@ if local_ip.startswith(PRODUCTION_ENV_TAG):
     QUEUE_NAME_PREFIX = "CRAWLER-UQ-{}"
 else:
     QUEUE_NAME_PREFIX = "CRAWLER-SANDBOX-UQ-{}"
-
-mob_log.debug(f"QUEUE_NAME_PREFIX: {QUEUE_NAME_PREFIX}, local_ip: {local_ip}").track_id("").commit()
