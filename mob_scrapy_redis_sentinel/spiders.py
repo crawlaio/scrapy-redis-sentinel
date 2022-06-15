@@ -68,7 +68,7 @@ class RedisMixin(object):
         if settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用了mq, 区分和生产队列名称
             self.redis_key = self.name
             self.queue_name = defaults.QUEUE_NAME_PREFIX.format(self.name)
-            mob_log.debug(f"queue_name: {self.queue_name}, redis_key: {self.redis_key}").track_id("").commit()
+            self.logger.info(f"mq queue_name: {self.queue_name}, redis_key: {self.redis_key}")
 
         if not self.redis_key.strip():
             raise ValueError("redis_key must not be empty")
