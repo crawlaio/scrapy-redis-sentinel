@@ -3,7 +3,8 @@ import redis
 import os
 import rediscluster
 from redis.sentinel import Sentinel
-from mob_tools.inner_ip import get_inner_ip
+
+from mob_scrapy_redis_sentinel import inner_ip, mob_log
 
 DUPEFILTER_KEY = "dupefilter:%(timestamp)s"
 
@@ -55,9 +56,11 @@ GET_QUEUE_SIZE = MQ_HOST + "/rest/ms/GemMQ/getQueueSize?queueName={queueName}"
 
 # 与环境相关的配置
 PRODUCTION_ENV_TAG = '10.90'
-local_ip = os.getenv("LOCAL_IP", get_inner_ip())
+local_ip = os.getenv("LOCAL_IP", inner_ip)
 # 不是以10.90开头的，认为是非生产环境
 if local_ip.startswith(PRODUCTION_ENV_TAG):
     QUEUE_NAME_PREFIX = "CRAWLER-UQ-{}"
 else:
     QUEUE_NAME_PREFIX = "CRAWLER-SANDBOX-UQ-{}"
+
+mob_log.debug(f"QUEUE_NAME_PREFIX: {QUEUE_NAME_PREFIX}, local_ip: {local_ip}").track_id("").commit()
