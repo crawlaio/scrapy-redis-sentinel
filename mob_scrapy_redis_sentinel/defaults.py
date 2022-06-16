@@ -49,6 +49,8 @@ LATEST_QUEUE_KEY = "%(name)s:latest_queue"
 MQ_USED = False  # 默认关闭
 
 MQ_HOST = "http://10.89.104.148:10011"
+# 创建队列
+CREATE_QUEUE = MQ_HOST + "/rest/ms/GemMQ/createQueue?queueName={queueName}"
 # 从指定队列中取出消息
 POP_MESSAGE = MQ_HOST + "/rest/ms/GemMQ/popMessage?queueName={queueName}"
 # 获取消息队列的大小

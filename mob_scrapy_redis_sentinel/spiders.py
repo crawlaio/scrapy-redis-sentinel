@@ -108,6 +108,8 @@ class RedisMixin(object):
         elif self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
             self.fetch_data = self.pop_batch_mq
             self.count_size = self.get_queue_size
+            # 爬虫启动时，检查队列是否存在,不存在则创建
+            crawler.signals.connect(self.check_queue, signal=signals.spider_opened)
         else:
             self.fetch_data = self.pop_list_queue
             self.count_size = self.server.llen
@@ -118,6 +120,11 @@ class RedisMixin(object):
         # The idle signal is called when the spider has no requests left,
         # that's when we will schedule new requests from redis queue
         crawler.signals.connect(self.spider_idle, signal=signals.spider_idle)
+
+    def check_queue(self):
+        if not self.get_queue_size(self.queue_name):
+            mob_log.warning(f"{self.queue_name} queue is not exist, now create it")
+            self.create_queue(self.queue_name)
 
     def pop_list_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
@@ -151,6 +158,13 @@ class RedisMixin(object):
                 return queue_data
         except:
             mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, pop mq error: {traceback.format_exc()}").track_id("").commit()
+
+    def create_queue(self, queue_name):
+        try:
+            r = requests.get(defaults.CREATE_QUEUE.format(queueName=queue_name), timeout=5)
+            return r.json()
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, create mq error: {traceback.format_exc()}").track_id("").commit()
 
     def send_message2mq(self, queue_name, queue_data, priority=0, delay_seconds=""):
         """
