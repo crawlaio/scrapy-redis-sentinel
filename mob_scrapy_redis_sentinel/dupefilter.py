@@ -2,6 +2,9 @@
 import logging
 import time
 
+import pymongo
+from pymongo.errors import DuplicateKeyError
+
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
@@ -10,6 +13,74 @@ from .bloomfilter import BloomFilter
 from .connection import from_settings
 
 logger = logging.getLogger(__name__)
+
+
+class MongoDupeFilter(BaseDupeFilter):
+    def __init__(self, mongo_uri, db, collection, debug=False, *args, **kwargs):
+        self.mongo = pymongo.MongoClient(mongo_uri)
+        self.mongo_db = db
+        self.collection = collection
+        self.debug = debug
+        self.logdupes = True
+        self.mongo[self.mongo_db][self.collection].create_index("fp", unique=True)
+
+    @classmethod
+    def from_settings(cls, settings):
+        mongo_uri = settings.get("MongoFilter_URI")
+        mongo_db = settings.get("MongoFilter_DB")
+        collection = defaults.DUPEFILTER_KEY % {"timestamp": int(time.time())}
+        debug = settings.getbool("DUPEFILTER_DEBUG", False)
+        return cls(mongo_uri=mongo_uri, db=mongo_db, collection=collection, debug=debug)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls.from_settings(crawler.settings)
+
+    def request_seen(self, request):
+        fp = self.request_fingerprint(request)
+        # This returns the number of values added, zero if already exists.
+        doc = self.mongo[self.mongo_db][self.collection].find_one({"fp": fp})
+        if doc:
+            return True
+        try:
+            self.mongo[self.mongo_db][self.collection].insert_one({"fp": fp})
+        except DuplicateKeyError:
+            pass
+        return False
+
+    def request_fingerprint(self, request):
+        return request_fingerprint(request)
+
+    @classmethod
+    def from_spider(cls, spider):
+        settings = spider.settings
+        mongo_uri = settings.get("MongoFilter_URI")
+        mongo_db = settings.get("MongoFilter_DB")
+        dupefilter_key = settings.get("SCHEDULER_DUPEFILTER_KEY", defaults.SCHEDULER_DUPEFILTER_KEY)
+        collection = dupefilter_key % {"spider": spider.name}
+        debug = settings.getbool("DUPEFILTER_DEBUG")
+        return cls(mongo_uri=mongo_uri, db=mongo_db, collection=collection, debug=debug)
+
+    def close(self, reason=""):
+        self.clear()
+
+    def clear(self):
+        self.mongo.drop_collection(self.collection)
+
+    def log(self, request, spider):
+        if self.debug:
+            msg = "Filtered duplicate request: %(request)s"
+            self.logger.debug(msg, {"request": request}, extra={"spider": spider})
+        elif self.logdupes:
+            msg = (
+                "Filtered duplicate request %(request)s"
+                " - no more duplicates will be shown"
+                " (see DUPEFILTER_DEBUG to show all duplicates)"
+            )
+            self.logger.debug(msg, {"request": request}, extra={"spider": spider})
+            self.logdupes = False
+
+        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
 
 
 # TODO: Rename class to RedisDupeFilter.

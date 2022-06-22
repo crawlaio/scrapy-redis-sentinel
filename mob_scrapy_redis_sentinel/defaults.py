@@ -6,6 +6,7 @@ from redis.sentinel import Sentinel
 
 from mob_scrapy_redis_sentinel import inner_ip, mob_log
 
+# For standalone use.
 DUPEFILTER_KEY = "dupefilter:%(timestamp)s"
 
 PIPELINE_KEY = "%(spider)s:items"
