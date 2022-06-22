@@ -14,6 +14,7 @@
 3. 填补 `dupefilter.py` 丢失的 "dupefilter/filtered" 的stats，利于爬虫进度数据分析
 4. 自动添加 track_id: "make request from data" 和 "get request from next_request "
 5. 增加任务防丢: 每次备份上一次任务，启动爬虫时，任务回队列首。`defaults.LATEST_QUEUE_KEY`
+6. 增加使用shield进行任务调度: `MQ_USED`
 -----
 
 本项目基于原项目 [scrapy-redis](https://github.com/rmax/scrapy-redis)
