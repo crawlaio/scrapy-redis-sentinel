@@ -246,7 +246,7 @@ class RedisMixin(object):
                     mob_log.info(f"spider name: {self.name}, mq repetition, track_id: {track_id}").track_id(track_id).commit()
                     continue
                 else:
-                    self.server.set(track_id, "1", ex=60 * 5)
+                    self.server.set(track_id, "1", ex=60 * 3)
 
             reqs = self.make_request_from_data(data)
             if isinstance(reqs, Iterable):
