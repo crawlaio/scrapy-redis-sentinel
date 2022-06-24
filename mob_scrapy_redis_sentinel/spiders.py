@@ -241,11 +241,12 @@ class RedisMixin(object):
             mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
 
             # 处理mq并发重复
-            if self.server.exists(track_id):  # 存在则重复
-                mob_log.info(f"spider name: {self.name}, mq repetition, track_id: {track_id}").track_id(track_id).commit()
-                continue
-            else:
-                self.server.set(track_id, "1", ex=60 * 5)
+            if self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+                if self.server.exists(track_id):  # 存在则重复
+                    mob_log.info(f"spider name: {self.name}, mq repetition, track_id: {track_id}").track_id(track_id).commit()
+                    continue
+                else:
+                    self.server.set(track_id, "1", ex=60 * 5)
 
             reqs = self.make_request_from_data(data)
             if isinstance(reqs, Iterable):
