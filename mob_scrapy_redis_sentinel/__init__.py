@@ -3,7 +3,7 @@
 __original_author__ = "Rolando Espinoza"
 __author__ = "luzihang"
 __email__ = "luzihang@mob.com"
-__version__ = "0.9"
+__version__ = "1.0"
 
 from mob_tools.mobLog import MobLoguru
 from mob_tools.inner_ip import get_inner_ip
