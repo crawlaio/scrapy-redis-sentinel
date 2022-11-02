@@ -5,6 +5,18 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/crawlmap/scrapy-redis-sentinel)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/scrapy-redis-sentinel)
 
+本项目基于原项目 [scrapy-redis-sentinel](https://github.com/crawlaio/scrapy-redis-sentinel)
+
+进行修改，修改内容如下：
+
+1. 添加了 Redis 哨兵，存在2个密码连接的支持
+2. 支持Python3.8+(collection.abc的引入方式)
+3. 填补 `dupefilter.py` 丢失的 "dupefilter/filtered" 的stats，利于爬虫进度数据分析
+4. 自动添加 track_id: "make request from data" 和 "get request from next_request "
+5. 增加任务防丢: 每次备份上一次任务，启动爬虫时，任务回队列首。`defaults.LATEST_QUEUE_KEY`
+6. 增加使用shield进行任务调度: `MQ_USED`
+-----
+
 本项目基于原项目 [scrapy-redis](https://github.com/rmax/scrapy-redis)
 
 进行修改，修改内容如下：
@@ -53,6 +65,8 @@ REDIS_SENTINELS = [
     ('172.25.2.26', 26379),
     ('172.25.2.27', 26379)
 ]
+# SENTINEL_KWARGS 非必须参数，可以设置sentinel密码，参考 https://github.com/redis/redis-py/issues/1219
+SENTINEL_KWARGS = {'password': 'sentinel_password'}
 
 # REDIS_SENTINEL_PARAMS 哨兵模式配置参数。
 REDIS_SENTINEL_PARAMS = {
@@ -80,22 +94,22 @@ REDIS_CLUSTER_PARAMS = {
 # 在 redis 中保持 scrapy-redis 用到的各个队列，从而允许暂停和暂停后恢复，也就是不清理 redis queues
 SCHEDULER_PERSIST = True
 # 调度队列  
-SCHEDULER = "scrapy_redis_sentinel.scheduler.Scheduler"
+SCHEDULER = "mob_scrapy_redis_sentinel.scheduler.Scheduler"
 # 基础去重
-DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
+DUPEFILTER_CLASS = "mob_scrapy_redis_sentinel.dupefilter.RedisDupeFilter"
 # BloomFilter
-# DUPEFILTER_CLASS = "scrapy_redis_sentinel.dupefilter.RedisBloomFilter"
+# DUPEFILTER_CLASS = "mob_scrapy_redis_sentinel.dupefilter.RedisBloomFilter"
 
 # 启用基于 Redis 统计信息
-STATS_CLASS = "scrapy_redis_sentinel.stats.RedisStatsCollector"
+STATS_CLASS = "mob_scrapy_redis_sentinel.stats.RedisStatsCollector"
 
 # 指定排序爬取地址时使用的队列
 # 默认的 按优先级排序( Scrapy 默认)，由 sorted set 实现的一种非 FIFO、LIFO 方式。
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderPriorityQueue'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderPriorityQueue'
 # 可选的 按先进先出排序（FIFO）
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderStack'
 # 可选的 按后进先出排序（LIFO）
-# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_sentinel.queue.SpiderStack'
+# SCHEDULER_QUEUE_CLASS = 'mob_scrapy_redis_sentinel.queue.SpiderStack'
 ```
 
 > 注：当使用集群时单机不生效

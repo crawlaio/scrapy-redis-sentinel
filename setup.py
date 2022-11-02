@@ -7,13 +7,13 @@ from shutil import rmtree
 
 from setuptools import Command, find_packages, setup
 
-NAME = "scrapy-redis-sentinel"
-FOLDER = "scrapy_redis_sentinel"
+NAME = "mob-scrapy-redis-sentinel"
+FOLDER = "mob_scrapy_redis_sentinel"
 DESCRIPTION = "Redis Cluster for Scrapy."
-EMAIL = "shitao0418@gmail.com"
-AUTHOR = "Shi Tao"
+EMAIL = "luzhang@mob.com"
+AUTHOR = "luzihang"
 REQUIRES_PYTHON = ">=3.6.0"
-VERSION = None
+VERSION = 1.0
 
 
 def read_file(filename):

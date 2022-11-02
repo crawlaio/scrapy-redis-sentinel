@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import time
-from collections import Iterable
+
+try:
+    from collections import Iterable
+except:
+    from collections.abc import Iterable
 
 from scrapy import signals
 from scrapy.exceptions import DontCloseSpider
@@ -9,11 +13,21 @@ from scrapy.spiders import Spider, CrawlSpider
 from . import connection, defaults
 from .utils import bytes_to_str
 
+from mob_scrapy_redis_sentinel import mob_log
+import json
+from mob_scrapy_redis_sentinel.utils import make_md5
+from mob_scrapy_redis_sentinel import inner_ip
+
+import requests
+import base64
+import traceback
+
 
 class RedisMixin(object):
     """Mixin class to implement reading urls from a redis queue."""
-
+    queue_name = None  # mob rocket mq name
     redis_key = None
+    latest_queue = None
     redis_batch_size = None
     redis_encoding = None
 
@@ -51,8 +65,17 @@ class RedisMixin(object):
 
         self.redis_key = self.redis_key % {"name": self.name}
 
+        if settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用了mq, 区分和生产队列名称
+            self.redis_key = self.name
+            self.queue_name = defaults.QUEUE_NAME_PREFIX.format(self.name)
+            self.logger.info(f"mq queue_name: {self.queue_name}, redis_key: {self.redis_key}")
+
         if not self.redis_key.strip():
             raise ValueError("redis_key must not be empty")
+
+        if self.latest_queue is None:
+            self.latest_queue = settings.get("LATEST_QUEUE_KEY", defaults.LATEST_QUEUE_KEY)
+        self.latest_queue = self.latest_queue % {"name": self.name}
 
         if self.redis_batch_size is None:
             # TODO: Deprecate this setting (REDIS_START_URLS_BATCH_SIZE).
@@ -82,13 +105,26 @@ class RedisMixin(object):
         elif self.settings.getbool("REDIS_START_URLS_AS_ZSET", defaults.START_URLS_AS_ZSET):
             self.fetch_data = self.pop_priority_queue
             self.count_size = self.server.zcard
+        elif self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+            self.fetch_data = self.pop_batch_mq
+            self.count_size = self.get_queue_size
+            # 爬虫启动时，检查队列是否存在,不存在则创建
+            crawler.signals.connect(self.check_queue, signal=signals.spider_opened)
         else:
             self.fetch_data = self.pop_list_queue
             self.count_size = self.server.llen
 
+        # 爬虫启动时，会先从备份队列，取出任务
+        crawler.signals.connect(self.spider_opened_latest_pop, signal=signals.spider_opened)
+
         # The idle signal is called when the spider has no requests left,
         # that's when we will schedule new requests from redis queue
         crawler.signals.connect(self.spider_idle, signal=signals.spider_idle)
+
+    def check_queue(self):
+        if not self.get_queue_size(self.queue_name):
+            mob_log.warning(f"{self.queue_name} queue is not exist, now create it")
+            self.create_queue(self.queue_name)
 
     def pop_list_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
@@ -97,6 +133,57 @@ class RedisMixin(object):
             datas, _ = pipe.execute()
         return datas
 
+    def get_queue_size(self, redis_key):
+        try:
+            r = requests.get(defaults.GET_QUEUE_SIZE.format(queueName=self.queue_name), timeout=5)
+            return int(r.json()['data']['queueSize'])
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, get mq queue size error: {traceback.format_exc()}").track_id("").commit()
+
+    def pop_batch_mq(self, redis_key, batch_size):
+        datas = []
+        for i in range(batch_size):
+            queue_data = self.pop_mq(self.queue_name)
+            if queue_data:
+                datas.append(queue_data)
+        return datas
+
+    def pop_mq(self, queue_name):
+        try:
+            r = requests.get(defaults.POP_MESSAGE.format(queueName=queue_name), timeout=5)
+            resp = r.json()
+            if resp.get("error_code") == 0 and resp.get("data"):
+                message = resp["data"]["message"]
+                queue_data = base64.b64decode(message)
+                return queue_data
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, pop mq error: {traceback.format_exc()}").track_id("").commit()
+
+    def create_queue(self, queue_name):
+        try:
+            r = requests.get(defaults.CREATE_QUEUE.format(queueName=queue_name), timeout=5)
+            return r.json()
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, create mq error: {traceback.format_exc()}").track_id("").commit()
+
+    def send_message2mq(self, queue_name, queue_data, priority=0, delay_seconds=""):
+        """
+        发送消息到指定队列
+        """
+        try:
+            message = (base64.b64encode(queue_data.encode())).decode()
+            form_data = {
+                "message": message,
+                "queueName": queue_name,
+                "priority": priority,
+                "delaySeconds": delay_seconds
+            }
+            r = requests.post(f"{defaults.MQ_HOST}/rest/ms/GemMQ/sendMessage", json=form_data)
+            resp = r.json()
+            mob_log.info(f"spider name: {self.name}, inner ip: {inner_ip}, send message to mq success, resp: {resp}").track_id("").commit()
+        except:
+            mob_log.error(f"spider name: {self.name}, inner ip: {inner_ip}, send message to mq error: {traceback.format_exc()}").track_id("").commit()
+
     def pop_priority_queue(self, redis_key, batch_size):
         with self.server.pipeline() as pipe:
             pipe.zrevrange(redis_key, 0, batch_size - 1)
@@ -104,12 +191,63 @@ class RedisMixin(object):
             datas, _ = pipe.execute()
         return datas
 
+    def latest_queue_mark(self, datas):
+        """备份队列 list or hash"""
+        # 1、删除上一次（多个worker，如何保证删除的一致性）
+        # self.server.delete(self.latest_queue)
+        self.server.hdel(self.latest_queue, inner_ip)
+        # 2、 存入
+        # with self.server.pipeline() as pipe:
+        #     for data in datas:
+        #         pipe.rpush(self.latest_queue, data)
+        #     pipe.execute()
+        latest_datas = []
+        for data in datas:
+            latest_datas.append(bytes_to_str(data))
+        mob_log.info(f"spider name: {self.name}, latest_queue_mark, inner_ip: {inner_ip}, latest_datas: {latest_datas}").track_id("").commit()
+        self.server.hset(self.latest_queue, inner_ip, latest_datas)
+
+    def spider_opened_latest_pop(self):
+        """绑定spider open信号； 取出 stop spider前，最后1次datas"""
+        mob_log.info(f"spider name: {self.name}, spider_opened_latest_pop, inner_ip: {inner_ip}").track_id("").commit()
+        if self.server.hexists(self.latest_queue, inner_ip):
+            latest_datas = self.server.hget(self.latest_queue, inner_ip)
+            mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, latest_datas: {bytes_to_str(latest_datas)}").track_id("").commit()
+            self.server.hdel(self.latest_queue, inner_ip)
+            for data in eval(bytes_to_str(latest_datas)):
+                mob_log.info(f"spider name: {self.name}, latest task back to queue, inner_ip: {inner_ip}, data: {data}").track_id("").commit()
+                if self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+                    self.send_message2mq(queue_name=self.queue_name, queue_data=str(data), priority=1)
+                else:  # 使用reids
+                    self.server.lpush(self.redis_key, json.dumps(data, ensure_ascii=False))
+
+        # if self.count_size(self.latest_queue) == 0:
+        #     return
+        # datas = self.fetch_data(self.latest_queue, self.redis_batch_size)
+
     def next_requests(self):
         """Returns a request to be scheduled or none."""
         # XXX: Do we need to use a timeout here?
         found = 0
         datas = self.fetch_data(self.redis_key, self.redis_batch_size)
+        self.latest_queue_mark(datas)
         for data in datas:
+            # 日志加入track_id
+            try:
+                queue_data = json.loads(data)
+            except:
+                queue_data = bytes_to_str(data)
+            track_id = make_md5(queue_data)
+            mob_log.info(f"spider name: {self.name}, make request from data, queue_data: {queue_data}").track_id(track_id).commit()
+
+            # 处理mq并发重复
+            if self.settings.getbool("MQ_USED", defaults.MQ_USED):  # 使用MQ
+                if self.server.exists(track_id):  # 存在则重复
+                    mob_log.info(f"spider name: {self.name}, mq repetition, track_id: {track_id}").track_id(track_id).commit()
+                    continue
+                else:
+                    self.server.set(track_id, "1", ex=60 * 3)
+
             reqs = self.make_request_from_data(data)
             if isinstance(reqs, Iterable):
                 for req in reqs:

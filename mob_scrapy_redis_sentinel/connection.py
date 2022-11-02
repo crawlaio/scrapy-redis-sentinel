@@ -152,6 +152,7 @@ def get_redis_sentinel_from_settings(settings):
     params.update(settings.getdict("REDIS_SENTINEL_PARAMS"))
     params.setdefault("sentinels", settings.get("REDIS_SENTINELS"))
     params.setdefault("socket_timeout", settings.get("REDIS_SENTINELS_SOCKET_TIMEOUT"))
+    params.setdefault("sentinel_kwargs", settings.get("SENTINEL_KWARGS"))
     return get_redis_sentinel(**params)
 
 
@@ -165,7 +166,10 @@ def get_redis_sentinel(**kwargs):
     redis_sentinel_cls = kwargs.get("redis_cluster_cls", defaults.REDIS_SENTINEL_CLS)
     sentinels = kwargs.pop("sentinels", None)
     socket_timeout = kwargs.pop("socket_timeout", 0.5)
-    redis_sentinel_cls = redis_sentinel_cls(sentinels=sentinels, socket_timeout=socket_timeout)
+    sentinel_kwargs = kwargs.pop("sentinel_kwargs", None)
+    redis_sentinel_cls = redis_sentinel_cls(sentinels=sentinels,
+                                            socket_timeout=socket_timeout,
+                                            sentinel_kwargs=sentinel_kwargs)
     redis_cls = redis_sentinel_cls.master_for(**kwargs)
     return redis_cls
 
